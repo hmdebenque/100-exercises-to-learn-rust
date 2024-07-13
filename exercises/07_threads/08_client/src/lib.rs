@@ -7,23 +7,37 @@ pub mod store;
 
 #[derive(Clone)]
 // TODO: flesh out the client implementation.
-pub struct TicketStoreClient {}
+pub struct TicketStoreClient {
+    command_sender: Sender<Command>,
+}
 
 impl TicketStoreClient {
     // Feel free to panic on all errors, for simplicity.
     pub fn insert(&self, draft: TicketDraft) -> TicketId {
-        todo!()
+        let (response_channel, response_receiver) = std::sync::mpsc::channel::<TicketId>();
+        let command = Command::Insert { draft, response_channel };
+        let result = self.command_sender.send(command);
+        if result.is_err() {
+            panic!("Server in error!");
+        }
+        response_receiver.recv().unwrap()
     }
 
     pub fn get(&self, id: TicketId) -> Option<Ticket> {
-        todo!()
+        let (response_channel, response_receiver) = std::sync::mpsc::channel::<Option<Ticket>>();
+        let command = Command::Get { id, response_channel };
+        let result = self.command_sender.send(command);
+        if result.is_err() {
+            panic!("Server in error!");
+        }
+        response_receiver.recv().unwrap()
     }
 }
 
 pub fn launch() -> TicketStoreClient {
-    let (sender, receiver) = std::sync::mpsc::channel();
+    let (command_sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || server(receiver));
-    todo!()
+    TicketStoreClient { command_sender }
 }
 
 // No longer public! This becomes an internal detail of the library now.
@@ -38,21 +52,21 @@ enum Command {
     },
 }
 
-pub fn server(receiver: Receiver<Command>) {
+fn server(receiver: Receiver<Command>) {
     let mut store = TicketStore::new();
     loop {
         match receiver.recv() {
             Ok(Command::Insert {
-                draft,
-                response_channel,
-            }) => {
+                   draft,
+                   response_channel,
+               }) => {
                 let id = store.add_ticket(draft);
                 let _ = response_channel.send(id);
             }
             Ok(Command::Get {
-                id,
-                response_channel,
-            }) => {
+                   id,
+                   response_channel,
+               }) => {
                 let ticket = store.get(id);
                 let _ = response_channel.send(ticket.cloned());
             }

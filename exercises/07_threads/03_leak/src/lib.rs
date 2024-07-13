@@ -4,9 +4,14 @@
 //  Hint: check out `Vec::leak`.
 
 use std::thread;
+use std::thread::JoinHandle;
 
 pub fn sum(v: Vec<i32>) -> i32 {
-    todo!()
+    v.leak()
+        .chunks(2)
+        .map(|c| thread::spawn(|| c.iter().sum()))
+        .map(|jh: JoinHandle<i32>| jh.join().unwrap())
+        .sum()
 }
 
 #[cfg(test)]
