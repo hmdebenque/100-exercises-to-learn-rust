@@ -35,7 +35,16 @@ impl TicketStoreClient {
         Ok(response_receiver.recv().unwrap())
     }
 
-    pub fn update(&self, ticket_patch: TicketPatch) -> Result<(), OverloadedError> {}
+    pub fn update(&self, ticket_patch: TicketPatch) -> Result<(), OverloadedError> {
+        let (response_sender, response_receiver) = sync_channel(1);
+        self.sender
+            .try_send(Command::Update {
+                patch: ticket_patch,
+                response_channel: response_sender,
+            })
+            .map_err(|_| OverloadedError)?;
+        Ok(response_receiver.recv().unwrap())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -68,24 +77,39 @@ pub fn server(receiver: Receiver<Command>) {
     loop {
         match receiver.recv() {
             Ok(Command::Insert {
-                draft,
-                response_channel,
-            }) => {
+                   draft,
+                   response_channel,
+               }) => {
                 let id = store.add_ticket(draft);
                 let _ = response_channel.send(id);
             }
             Ok(Command::Get {
-                id,
-                response_channel,
-            }) => {
+                   id,
+                   response_channel,
+               }) => {
                 let ticket = store.get(id);
                 let _ = response_channel.send(ticket.cloned());
             }
             Ok(Command::Update {
-                patch,
-                response_channel,
-            }) => {
-                todo!()
+                   patch,
+                   response_channel,
+               }) => {
+                let ticket_opt = store.get_mut(patch.id);
+                if ticket_opt.is_some() {
+                    let mut ticket_to_mod = ticket_opt.unwrap();
+                    if patch.status.is_some() {
+                        ticket_to_mod.status = patch.status.unwrap();
+                    }
+                    if patch.title.is_some() {
+                        ticket_to_mod.title = patch.title.unwrap();
+                    }
+                    if patch.description.is_some() {
+                        ticket_to_mod.description = patch.description.unwrap();
+                    }
+                    let _ = response_channel.send(());
+                } else {
+                    let _ = response_channel.send(());
+                }
             }
             Err(_) => {
                 // There are no more senders, so we can safely break
