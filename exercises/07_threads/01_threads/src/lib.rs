@@ -13,9 +13,16 @@
 // vectors for each half of the original vector. We'll see why
 // this is necessary in the next exercise.
 use std::thread;
+use std::thread::{JoinHandle};
 
 pub fn sum(v: Vec<i32>) -> i32 {
-    todo!()
+    v
+        .chunks(2)
+        .map(|chunk| Vec::from(chunk))
+        .map(|x| thread::spawn(move || x.iter().sum()))
+        .map(|join_handle: JoinHandle<i32>| join_handle.join())
+        .map(|result| result.unwrap())
+        .sum()
 }
 
 #[cfg(test)]
