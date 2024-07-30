@@ -1,9 +1,22 @@
-use crate::data::{Status, Ticket, TicketDraft};
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
+use crate::data::{Status, Ticket, TicketDraft};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TicketId(u64);
+
+impl From<&TicketId> for u64 {
+    fn from(value: &TicketId) -> Self {
+        value.0
+    }
+}
+
+impl From<u64> for TicketId {
+    fn from(value: u64) -> Self {
+        TicketId(value)
+    }
+}
 
 #[derive(Clone)]
 pub struct TicketStore {

@@ -3,6 +3,18 @@ use std::convert::TryFrom;
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub struct TicketTitle(String);
 
+impl From<TicketTitle> for String {
+    fn from(value: TicketTitle) -> Self {
+        value.0
+    }
+}
+
+impl From<&TicketTitle> for String {
+    fn from(value: &TicketTitle) -> Self {
+        value.0.clone()
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum TicketTitleError {
     #[error("The title cannot be empty")]
@@ -41,8 +53,9 @@ fn validate(title: &str) -> Result<(), TicketTitleError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::convert::TryFrom;
+
+    use super::*;
 
     #[test]
     fn test_try_from_string() {

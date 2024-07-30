@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
+json = "0.12"
 thiserror = "1"

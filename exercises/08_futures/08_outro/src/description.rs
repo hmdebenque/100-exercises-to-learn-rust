@@ -27,6 +27,18 @@ impl TryFrom<&str> for TicketDescription {
     }
 }
 
+impl From<TicketDescription> for String {
+    fn from(value: TicketDescription) -> Self {
+        value.0
+    }
+}
+
+impl From<&TicketDescription> for String {
+    fn from(value: &TicketDescription) -> Self {
+        value.0.clone()
+    }
+}
+
 fn validate(description: &str) -> Result<(), TicketDescriptionError> {
     if description.is_empty() {
         Err(TicketDescriptionError::Empty)
@@ -39,8 +51,9 @@ fn validate(description: &str) -> Result<(), TicketDescriptionError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::convert::TryFrom;
+
+    use super::*;
 
     #[test]
     fn test_try_from_string() {
